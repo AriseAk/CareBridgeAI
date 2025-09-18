@@ -13,7 +13,7 @@ const Main = () => {
   };
 
   return (
-    <div className="h-{93vh} flex flex-col justify-between bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+    <div className="min-h-screen  flex flex-col justify-between bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
       {/* Background Effects */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-900/20 via-slate-900/50 to-black"></div>
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
@@ -51,7 +51,7 @@ const Main = () => {
           <div className="absolute inset-0 rounded-full bg-gradient-to-r from-cyan-500 to-purple-500 animate-ping opacity-20"></div>
           <div className="absolute inset-2 rounded-full bg-gradient-to-r from-cyan-500 to-purple-500 animate-ping opacity-30 delay-1000"></div>
           
-          <button className="relative p-6 bg-gradient-to-r from-cyan-600 via-purple-600 to-pink-600 text-white rounded-full shadow-2xl hover:shadow-cyan-500/25 transform hover:scale-110 transition-all duration-300 backdrop-blur-sm border border-white/10 group">
+          <button onClick={() => handleSelect("chatbot")} className="relative p-6 bg-gradient-to-r from-cyan-600 via-purple-600 to-pink-600 text-white rounded-full shadow-2xl hover:shadow-cyan-500/25 transform hover:scale-110 transition-all duration-300 backdrop-blur-sm border border-white/10 group">
             <Mic size={32} className="drop-shadow-lg group-hover:animate-pulse" />
           </button>
         </div>

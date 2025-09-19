@@ -45,8 +45,7 @@ Ensure you have Python 3.8 or newer installed on your machine.
 
 ### Step 2: Clone the Repository (if applicable)
 ```bash
-git clone <your-repository-url>
-cd <your-repository-directory>
+git clone https://github.com/AriseAk/CareBridgeAI.git
 ```
 
 ### Step 3: Install Dependencies
@@ -73,52 +72,21 @@ Save your Python code into a file named `train_chatbot.py`.
 Run the script from your terminal:
 
 ```bash
-python train_chatbot.py
+python app.py
 ```
 
-The script will print progress updates. Once training is complete, the fine-tuned model and tokenizer will be saved in a new directory named `./my-finetuned-medical-chatbot-pytorch`.
+The script will run the backend for the website and the model named `./my-finetuned-medical-chatbot-pytorch` can be found from the model drive link.
 
 ---
 
-## 🚀 Using the Trained Chatbot
-
-After training, you can easily load your custom chatbot and use it to generate responses.
-
-```python
-from transformers import BartTokenizer, BartForConditionalGeneration
-
-# Define the directory where your model is saved
-SAVE_DIRECTORY = "./my-finetuned-medical-chatbot-pytorch"
-
-# Load the fine-tuned model and tokenizer from the local directory
-print("Loading the fine-tuned model...")
-tokenizer = BartTokenizer.from_pretrained(SAVE_DIRECTORY)
-model = BartForConditionalGeneration.from_pretrained(SAVE_DIRECTORY)
-print("Model loaded successfully!")
-
-# --- Create a sample input to test the chatbot ---
-description = "Sore throat and headache"
-patient_dialogue = "I woke up with a really bad sore throat and a pounding headache. I don't have a fever."
-input_text = f"{description} {patient_dialogue}"
-
-# --- Generate a response from the model ---
-print("\nGenerating response...")
-inputs = tokenizer(input_text, return_tensors='pt', max_length=512, truncation=True)
-summary_ids = model.generate(
-    inputs['input_ids'], 
-    max_length=150, 
-    num_beams=4, 
-    early_stopping=True
-)
-response = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
-
-# --- Print the results ---
-print("-" * 30)
-print("Patient says:", patient_dialogue)
-print("\nDoctor's likely response:", response)
-print("-" * 30)
+Simultaneously run 
+```bash
+npm run dev
 ```
+This runs the frontend and when run together provides access to the ai model where u can access the chat bot.
 
+
+### Google Collab link - [https://colab.research.google.com/drive/1XD-kanrUy_kxT8efIEYsnkBEBNCFjvsH#scrollTo=UR_cAqXy9Gt5]
 ---
 
  ### Model link - https://drive.google.com/file/d/1Ut6hJh_EBfB_reEh2cZPxai834ng10_W/view?usp=sharing

@@ -18,8 +18,9 @@ function App() {
 
   return (
     <>
-      <Navbar />
-       <Router>
+    {/* Move Router to wrap everything */}
+    <Router>
+      <Navbar /> {/* Now Navbar can use Links safely */}
       <Routes>
         <Route path="/" element={<Main />} />
         <Route path="/donors" element={<Donor />} />
@@ -27,11 +28,12 @@ function App() {
         <Route path="/about" element={<About />} />
         <Route path="/services" element={<Services />} />
         <Route path="/hospital" element={<HospitalLocator />} />
-        <Route path="/chatbot" element={<ChatBot />} />
+        
+        {/* This is the route we just updated */}
+        <Route path="/chatbot" element={<ChatBot />} /> 
       </Routes>
     </Router>
     </>
   )
 }
-
 export default App

@@ -1,95 +1,127 @@
-import React, { useState } from "react"; // <-- 1. Import useState
-import { Mic, Send } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import { Mic, Send, BookOpen } from "lucide-react";
 
 const ChatBot = () => {
-  // --- 2. Set up state to manage the conversation ---
-  const [input, setInput] = useState(""); // Holds the text in the input box
+  const [input, setInput] = useState("");
   const [messages, setMessages] = useState([
-    { text: "Hello! 👋 How can I help you today?", sender: "bot" },
-  ]); // Holds the list of all messages
+    { 
+      text: "Hello! 👋 I am your Medical Assistant. Describe your symptoms, and I'll find similar past cases to help.", 
+      sender: "bot", 
+      sources: []
+    },
+  ]);
   const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef(null);
 
-  // --- 3. Handle form submission with a JavaScript function ---
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+  useEffect(scrollToBottom, [messages]);
+
   const handleSubmit = async (event) => {
-    event.preventDefault(); // Prevents the default page reload
-    if (!input.trim()) return; // Don't send empty messages
+    event.preventDefault();
+    if (!input.trim()) return;
 
     const userMessage = { text: input, sender: "user" };
-    setMessages((prevMessages) => [...prevMessages, userMessage]); // Add user message to chat
-    setInput(""); // Clear the input box
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
     setIsLoading(true);
 
     try {
-      // --- 4. The fetch call is now inside the event handler ---
-      const response = await fetch('http://127.0.0.1:5000/predict', {
+      // Connect to your Python Backend
+      const response = await fetch('http://127.0.0.1:5000/api/chat', { 
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prompt: input }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: userMessage.text }), 
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      if (!response.ok) throw new Error("Network response was not ok");
 
       const data = await response.json();
-      const botMessage = { text: data.response, sender: "bot" };
-      setMessages((prevMessages) => [...prevMessages, botMessage]); // Add bot response to chat
+      
+      const botMessage = { 
+        text: data.answer, 
+        sender: "bot",
+        sources: data.sources || []
+      };
+      
+      setMessages((prev) => [...prev, botMessage]);
 
     } catch (error) {
-      console.error("There was a problem with the fetch operation:", error);
-      const errorMessage = { text: "Sorry, I'm having trouble connecting.", sender: "bot" };
-      setMessages((prevMessages) => [...prevMessages, errorMessage]);
+      console.error("Error:", error);
+      const errorMessage = { text: "Sorry, I'm having trouble connecting to the medical database.", sender: "bot" };
+      setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="h-screen w-full bg-white flex flex-col">
-      {/* Header */}
-      <div className="px-4 py-3 bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 text-white font-semibold">
-        CareBridgeAI
-      </div>
-
-      {/* --- 5. Messages are now rendered dynamically from state --- */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50">
+    // Height calculation: 100vh minus roughly 64px for your main Navbar
+    <div className="h-[calc(100vh-64px)] w-full bg-slate-50 flex flex-col font-sans text-gray-800">
+      
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {messages.map((msg, index) => (
           <div
             key={index}
-            className={`max-w-[70%] px-4 py-2 rounded-2xl text-sm ${
-              msg.sender === "user"
-                ? "ml-auto bg-blue-600 text-white"
-                : "mr-auto bg-gray-200 text-gray-800"
-            }`}
+            className={`flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"}`}
           >
-            {msg.text}
+            <div
+              className={`max-w-[85%] md:max-w-[70%] px-5 py-3.5 rounded-2xl text-sm leading-relaxed shadow-sm ${
+                msg.sender === "user"
+                  ? "bg-blue-600 text-white rounded-br-none"
+                  : "bg-white border border-gray-100 text-slate-700 rounded-bl-none"
+              }`}
+            >
+              <div className="whitespace-pre-wrap">{msg.text}</div>
+              
+              {/* Citations */}
+              {msg.sender === "bot" && msg.sources && msg.sources.length > 0 && (
+                <div className="mt-4 pt-3 border-t border-gray-100">
+                  <p className="text-xs font-semibold text-slate-400 mb-2 flex items-center gap-1">
+                    <BookOpen size={12} /> Referenced Cases:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {msg.sources.map((source, idx) => (
+                      <div key={idx} className="text-xs bg-slate-50 border border-slate-200 text-slate-500 px-2 py-1 rounded hover:bg-slate-100 cursor-pointer transition-colors" title={`Case ID: ${source.id}`}>
+                         Case #{source.id}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         ))}
-         {isLoading && (
-            <div className="max-w-[70%] mr-auto bg-gray-200 text-gray-800 px-4 py-2 rounded-2xl text-sm">
-                Thinking...
+        
+        {isLoading && (
+          <div className="flex items-start">
+             <div className="bg-white border border-gray-100 px-5 py-4 rounded-2xl rounded-bl-none shadow-sm flex gap-1">
+              <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></span>
+              <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce delay-100"></span>
+              <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce delay-200"></span>
             </div>
+          </div>
         )}
+        <div ref={messagesEndRef} />
       </div>
 
-      {/* --- 6. The form now uses onSubmit and the input is controlled --- */}
-      <form onSubmit={handleSubmit}>
-        <div className="flex items-center gap-2 p-3 border-t bg-white">
-          <input
-            type="text"
-            placeholder="Type a message..."
-            className="flex-1 px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-indigo-400"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-          />
-          <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-lg" disabled={isLoading}>
-            <Send className="w-5 h-5" />
-          </button>
-          <button type="button" className="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-lg">
-            <Mic className="w-5 h-5" />
-          </button>
+      {/* Input Form */}
+      <form onSubmit={handleSubmit} className="p-4 bg-white border-t border-gray-100">
+        <div className="max-w-4xl mx-auto relative flex items-center gap-2">
+            <input
+                type="text"
+                placeholder="Describe symptoms..."
+                className="w-full pl-5 pr-24 py-4 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-slate-700"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+            />
+            <div className="absolute right-2 flex gap-1">
+                <button type="submit" className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <Send className="w-5 h-5" />
+                </button>
+            </div>
         </div>
       </form>
     </div>

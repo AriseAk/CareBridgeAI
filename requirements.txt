@@ -1,0 +1,25 @@
+# Web Server
+flask
+flask-cors
+gunicorn
+python-dotenv
+requests
+
+# Database & Vector Search
+pymongo
+pinecone-client
+
+# AI & NLP
+torch --index-url https://download.pytorch.org/whl/cpu
+transformers
+sentence-transformers
+groq
+pandas
+spacy
+
+# Audio & Translation
+SpeechRecognition
+pydub
+gTTS
+googletrans==4.0.0-rc1
+deep-translator

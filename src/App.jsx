@@ -16,24 +16,32 @@ import ChatBot from './components/ChatBot'
 function App() {
   const { isLoading, position, error, getLocation } = useLocation();
 
+  // 1. State and toggle function (You already had this!)
+  const [isLightMode, setIsLightMode] = useState(false);
+  
+  const toggleTheme = () => {
+    setIsLightMode(!isLightMode);
+  };
+
   return (
-    <>
-    {/* Move Router to wrap everything */}
     <Router>
-      <Navbar /> {/* Now Navbar can use Links safely */}
-      <Routes>
-        <Route path="/" element={<Main />} />
-        <Route path="/donors" element={<Donor />} />
-        <Route path="/ngos" element={<Ngo />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/services" element={<Services />} />
-        <Route path="/hospital" element={<HospitalLocator />} />
+      <div className={`min-h-screen transition-colors duration-700 ${isLightMode ? "bg-slate-50" : "bg-[#020617]"}`}>
+
+        <Navbar isLightMode={isLightMode} toggleTheme={toggleTheme} /> 
         
-        {/* This is the route we just updated */}
-        <Route path="/chatbot" element={<ChatBot />} /> 
-      </Routes>
+        <Routes>
+          <Route path="/" element={<Main isLightMode={isLightMode} />} />
+          <Route path="/donors" element={<Donor isLightMode={isLightMode} />} />
+          <Route path="/ngos" element={<Ngo isLightMode={isLightMode} />} />
+          <Route path="/about" element={<About isLightMode={isLightMode} />} />
+          <Route path="/services" element={<Services isLightMode={isLightMode} />} />
+          <Route path="/hospital" element={<HospitalLocator isLightMode={isLightMode} />} />
+          <Route path="/chatbot" element={<ChatBot isLightMode={isLightMode} />} /> 
+        </Routes>
+        
+      </div>
     </Router>
-    </>
   )
 }
+
 export default App

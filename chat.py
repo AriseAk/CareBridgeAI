@@ -1,5 +1,7 @@
 import os
 import io
+import re
+import requests
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from pinecone import Pinecone
@@ -9,9 +11,7 @@ from dotenv import load_dotenv
 import speech_recognition as sr
 from pydub import AudioSegment
 from gtts import gTTS
-from deep_translator import GoogleTranslator 
-import requests
-import re
+from deep_translator import GoogleTranslator
 
 # 1. Setup App
 app = Flask(__name__)
@@ -31,7 +31,7 @@ pc = Pinecone(api_key=PINECONE_API_KEY)
 index = pc.Index("medical-bot")
 
 print("🧠 Loading Embedding Model...")
-embedder = SentenceTransformer('all-MiniLM-L6-v2', device='cpu') 
+embedder = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
 
 print("✨ Connecting to Groq...")
 client = Groq(api_key=GROQ_API_KEY)
@@ -47,31 +47,30 @@ def translate_text(text, source='auto', target='en'):
         return text
 
 # --- 1. Multilingual Chat Endpoint ---
-
 @app.route('/api/chat', methods=['POST'])
 @app.route('/predict', methods=['POST'])
 def chat():
     data = request.json
     user_query = data.get('query') or data.get('prompt')
-    
+
     if not user_query:
         return jsonify({"error": "No query provided"}), 400
 
     try:
-        # A. Translate to English (If you are using deep_translator)
+        # A. Translate to English
         try:
             query_english = translate_text(user_query, target='en')
         except:
             query_english = user_query
-        
+
         # B. Search Pinecone
         query_vector = embedder.encode(query_english).tolist()
         results = index.query(
-            vector=query_vector, 
-            top_k=3, 
+            vector=query_vector,
+            top_k=3,
             include_metadata=True
         )
-        
+
         # C. Build Context
         context_text = ""
         sources = []
@@ -119,30 +118,29 @@ def chat():
             model="llama-3.3-70b-versatile",
             temperature=0.5,
         )
-        
+
         full_response = completion.choices[0].message.content
 
         # E. Extract Search Type
-        search_type = "General" 
+        search_type = "General"
         clean_answer = full_response
-        
-        # Regex to find "SEARCH_TYPE: Cardiology" at the end
+
         match = re.search(r"SEARCH_TYPE:\s*([A-Za-z]+)", full_response)
         if match:
             search_type = match.group(1).strip()
-            # Remove the tag so the user doesn't see it
             clean_answer = full_response.replace(match.group(0), "").strip()
 
         return jsonify({
             "answer": clean_answer,
             "sources": sources,
             "language": "en",
-            "search_type": search_type 
+            "search_type": search_type
         })
 
     except Exception as e:
         print(f"Server Error: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 # --- 2. Multilingual Text-to-Speech ---
 @app.route('/api/speak', methods=['POST'])
@@ -150,13 +148,13 @@ def speak():
     try:
         data = request.json
         text = data.get('text', '')
-        lang = data.get('lang', 'en') 
-        
+        lang = data.get('lang', 'en')
+
         if not text:
             return jsonify({"error": "No text provided"}), 400
 
-        clean_lang = lang.split('-')[0] 
-        
+        clean_lang = lang.split('-')[0]
+
         try:
             tts = gTTS(text=text, lang=clean_lang)
         except ValueError:
@@ -171,6 +169,7 @@ def speak():
         print(f"TTS Error: {e}")
         return jsonify({"error": str(e)}), 500
 
+
 # --- 3. Voice-to-Text Endpoint ---
 @app.route("/api/voicesearch", methods=["POST"])
 def voice_search():
@@ -179,7 +178,7 @@ def voice_search():
 
     try:
         audio_file = request.files["audio"]
-        
+
         audio = AudioSegment.from_file(audio_file)
         wav_io = io.BytesIO()
         audio.export(wav_io, format="wav")
@@ -189,7 +188,6 @@ def voice_search():
         with sr.AudioFile(wav_io) as source:
             recognizer.adjust_for_ambient_noise(source)
             audio_data = recognizer.record(source)
-            # Google Speech Recog Auto-Detects language fairly well
             text = recognizer.recognize_google(audio_data)
             print(f"Transcribed: {text}")
 
@@ -199,85 +197,131 @@ def voice_search():
         print(f"Voice Error: {e}")
         return jsonify({"error": str(e)}), 500
 
-def get_hospitals_from_overpass(lat, lng, radius=5000, hospital_type="General"):
-    overpass_url = "https://overpass-api.de/api/interpreter"
-    
-    # 1. Base query for general hospitals (Always a safe fallback)
-    base_tag = '["amenity"="hospital"]'
 
-    # 2. Specific Mappings based on Symptoms
-    # The AI decides the type, we just map it to OpenStreetMap tags here.
-    if hospital_type == "Dentist": 
-        base_tag = '["amenity"="dentist"]'
-    elif hospital_type == "Pharmacy": 
-        base_tag = '["amenity"="pharmacy"]'
-    elif hospital_type == "Clinic": 
-        base_tag = '["amenity"="clinic"]'
-    elif hospital_type == "Pediatrics":
-        # Look for clinics specifically tagged for children OR general hospitals
-        base_tag = '["healthcare:speciality"="paediatrics"]'
-    elif hospital_type == "Cardiology":
-        base_tag = '["healthcare:speciality"="cardiology"]'
-    elif hospital_type == "Dermatology":
-        base_tag = '["healthcare:speciality"="dermatology"]'
-    elif hospital_type == "Ophthalmology":
-        base_tag = '["healthcare:speciality"="ophthalmology"]'
-    elif hospital_type == "Neurology":
-        base_tag = '["healthcare:speciality"="neurology"]'
-    elif hospital_type == "Orthopedics":
-        base_tag = '["healthcare:speciality"="orthopaedics"]'
-    query = f"""
+# --- 4. Hospital Locator ---
+OVERPASS_HEADERS = {
+    "User-Agent": "CareBridgeAI/1.0 (humanitarian-aid-platform)",
+    "Accept": "application/json"
+}
+
+# Try primary then fallback Overpass mirror
+OVERPASS_URLS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+]
+
+
+def build_overpass_query(lat, lng, radius, tag):
+    return f"""
     [out:json][timeout:25];
     (
-      node{base_tag}(around:{radius},{lat},{lng});
-      way{base_tag}(around:{radius},{lat},{lng});
-      relation{base_tag}(around:{radius},{lat},{lng});
-      
-      // OPTIONAL: Fallback to general hospitals if looking for a specialist
-      // Remove these 3 lines if you ONLY want specific results
-      node["amenity"="hospital"](around:{radius},{lat},{lng});
-      way["amenity"="hospital"](around:{radius},{lat},{lng});
-      relation["amenity"="hospital"](around:{radius},{lat},{lng});
+      node{tag}(around:{radius},{lat},{lng});
+      way{tag}(around:{radius},{lat},{lng});
+      relation{tag}(around:{radius},{lat},{lng});
     );
     out center;
     """
-    
-    try:
-        response = requests.get(overpass_url, params={'data': query})
-        data = response.json()
-        
-        results = []
-        seen_ids = set() # To avoid duplicates from the fallback
-        
-        for element in data.get('elements', []):
-            if element['id'] in seen_ids: continue
-            seen_ids.add(element['id'])
-            
-            name = element.get('tags', {}).get('name', "Unknown Medical Facility")
-            lat = element.get('lat') or element.get('center', {}).get('lat')
-            lon = element.get('lon') or element.get('center', {}).get('lon')
-            
-            # Determine the display type (e.g. "Cardiology" vs "Hospital")
-            # If the tag matches our specialist search, label it correctly.
-            actual_type = "Hospital"
-            if "dentist" in str(element.get('tags')): actual_type = "Dentist"
-            elif "pharmacy" in str(element.get('tags')): actual_type = "Pharmacy"
-            elif hospital_type.lower() in str(element.get('tags')).lower(): actual_type = hospital_type
-            
-            if lat and lon:
-                results.append({
-                    "id": element['id'],
-                    "name": name,
-                    "lat": lat,
-                    "lng": lon,
-                    "type": actual_type
-                })
-        
-        return results[:15]
-        
-    except Exception as e:
-        print(f"Overpass Error: {e}")
-        return []
+
+
+def run_overpass_query(query):
+    """Try each Overpass mirror until one succeeds."""
+    for url in OVERPASS_URLS:
+        try:
+            response = requests.get(
+                url,
+                params={"data": query},
+                headers=OVERPASS_HEADERS,
+                timeout=30
+            )
+            response.raise_for_status()
+
+            text = response.text.strip()
+            if not text:
+                print(f"Overpass ({url}) returned empty response, trying next mirror...")
+                continue
+
+            data = response.json()
+            return data.get("elements", [])
+
+        except requests.exceptions.Timeout:
+            print(f"Overpass ({url}) timed out, trying next mirror...")
+        except requests.exceptions.HTTPError as e:
+            print(f"Overpass ({url}) HTTP error: {e.response.status_code}, trying next mirror...")
+        except ValueError as e:
+            print(f"Overpass ({url}) JSON parse error: {e}, trying next mirror...")
+        except Exception as e:
+            print(f"Overpass ({url}) error: {e}, trying next mirror...")
+
+    print("All Overpass mirrors failed.")
+    return []
+
+
+def parse_elements(elements, hospital_type):
+    results = []
+    seen_ids = set()
+
+    for element in elements:
+        if element["id"] in seen_ids:
+            continue
+        seen_ids.add(element["id"])
+
+        name = element.get("tags", {}).get("name", "Unknown Medical Facility")
+        lat = element.get("lat") or element.get("center", {}).get("lat")
+        lon = element.get("lon") or element.get("center", {}).get("lon")
+
+        if not lat or not lon:
+            continue
+
+        tags_str = str(element.get("tags", {})).lower()
+        actual_type = "Hospital"
+        if "dentist" in tags_str:
+            actual_type = "Dentist"
+        elif "pharmacy" in tags_str:
+            actual_type = "Pharmacy"
+        elif hospital_type.lower() in tags_str:
+            actual_type = hospital_type
+
+        results.append({
+            "id": element["id"],
+            "name": name,
+            "lat": lat,
+            "lng": lon,
+            "type": actual_type
+        })
+
+    return results
+
+
+def get_hospitals_from_overpass(lat, lng, radius=5000, hospital_type="General"):
+    # Map hospital_type to OSM tag
+    type_to_tag = {
+        "Dentist":       '["amenity"="dentist"]',
+        "Pharmacy":      '["amenity"="pharmacy"]',
+        "Clinic":        '["amenity"="clinic"]',
+        "Pediatrics":    '["healthcare:speciality"="paediatrics"]',
+        "Cardiology":    '["healthcare:speciality"="cardiology"]',
+        "Dermatology":   '["healthcare:speciality"="dermatology"]',
+        "Ophthalmology": '["healthcare:speciality"="ophthalmology"]',
+        "Neurology":     '["healthcare:speciality"="neurology"]',
+        "Orthopedics":   '["healthcare:speciality"="orthopaedics"]',
+    }
+    general_tag = '["amenity"="hospital"]'
+    primary_tag = type_to_tag.get(hospital_type, general_tag)
+
+    # Run primary query
+    query = build_overpass_query(lat, lng, radius, primary_tag)
+    elements = run_overpass_query(query)
+    results = parse_elements(elements, hospital_type)
+
+    # If specialist search returned nothing, fall back to general hospitals
+    if not results and primary_tag != general_tag:
+        print(f"No {hospital_type} found within {radius}m, falling back to general hospitals...")
+        fallback_query = build_overpass_query(lat, lng, radius, general_tag)
+        fallback_elements = run_overpass_query(fallback_query)
+        results = parse_elements(fallback_elements, "General")
+
+    return results[:15]
+
 
 @app.route('/api/hospitals', methods=['POST'])
 def find_hospitals():
@@ -285,13 +329,19 @@ def find_hospitals():
     lat = data.get('lat')
     lng = data.get('lng')
     hospital_type = data.get('type', 'General')
-    
+
     if not lat or not lng:
         return jsonify({"error": "Location required"}), 400
-        
-    hospitals = get_hospitals_from_overpass(lat, lng, hospital_type=hospital_type)
-    
+
+    hospitals = get_hospitals_from_overpass(lat, lng, radius=5000, hospital_type=hospital_type)
+
+    # If still empty, widen radius to 10km and search general hospitals
+    if not hospitals:
+        print("No results in 5km, widening search to 10km...")
+        hospitals = get_hospitals_from_overpass(lat, lng, radius=10000, hospital_type="General")
+
     return jsonify({"hospitals": hospitals})
+
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True)

@@ -34,6 +34,7 @@ const ChatBot = ({ isLightMode = false }) => {
   const [input, setInput] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef(null);
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   // Chat State
   const [messages, setMessages] = useState([
@@ -73,7 +74,7 @@ const ChatBot = ({ isLightMode = false }) => {
   const handleSpeak = async (text, lang = 'en') => {
     if (!text) return;
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/speak', {
+      const response = await fetch(`${API_URL}/api/speak`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, lang }),
@@ -90,7 +91,7 @@ const ChatBot = ({ isLightMode = false }) => {
 
     setIsLoading(true);
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/hospitals', {
+      const response = await fetch(`${API_URL}/api/hospitals`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -130,7 +131,7 @@ const ChatBot = ({ isLightMode = false }) => {
 
         setIsLoading(true);
         try {
-          const res = await fetch("http://127.0.0.1:5000/api/voicesearch", { method: "POST", body: formData });
+          const res = await fetch(`${API_URL}/api/voicesearch`, { method: "POST", body: formData });
           const data = await res.json();
           if (data.transcribed_text) setInput(data.transcribed_text);
         } catch (err) { console.error(err); }
@@ -159,7 +160,7 @@ const ChatBot = ({ isLightMode = false }) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/chat', {
+      const response = await fetch(`${API_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: userMessage.text }),

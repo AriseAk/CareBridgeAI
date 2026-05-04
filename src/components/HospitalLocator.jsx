@@ -155,6 +155,7 @@ const HospitalLocator = ({ isLightMode = false }) => {
   const [searchType, setSearchType] = useState('hospital');
   const [searchError, setSearchError] = useState(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   const searchTypes = [
     { value: 'hospital', label: 'Hospitals' },
@@ -196,7 +197,7 @@ const HospitalLocator = ({ isLightMode = false }) => {
     setHasSearched(true);
 
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/hospitals', {
+      const response = await fetch(`${API_URL}/api/hospitals`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

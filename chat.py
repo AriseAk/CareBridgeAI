@@ -15,7 +15,10 @@ from deep_translator import GoogleTranslator
 
 # 1. Setup App
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins=[
+    "http://localhost:5173",
+    "https://carebridgeai-peach.vercel.app/"
+])
 
 # 2. Load Secrets
 load_dotenv()

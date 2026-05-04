@@ -23,5 +23,4 @@ spacy==3.7.4
 SpeechRecognition==3.10.4
 pydub==0.25.1
 gTTS==2.5.1
-googletrans==4.0.0-rc1
 deep-translator==1.11.4

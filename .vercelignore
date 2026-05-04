@@ -1,0 +1,6 @@
+# Ignore Python backend files for Vercel deployment
+requirements.txt
+app.py
+chat.py
+main.py
+main.ipynb

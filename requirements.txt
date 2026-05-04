@@ -1,25 +1,27 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+
 # Web Server
-flask
-flask-cors
-gunicorn
-python-dotenv
-requests
+Flask==3.0.3
+Flask-Cors==4.0.1
+gunicorn==22.0.0
+python-dotenv==1.0.1
+requests==2.32.3
 
 # Database & Vector Search
-pymongo
-pinecone-client
+pymongo==4.7.2
+pinecone-client==4.1.1
 
 # AI & NLP
-torch --index-url https://download.pytorch.org/whl/cpu
-transformers
-sentence-transformers
-groq
-pandas
-spacy
+torch==2.3.0
+transformers==4.41.2
+sentence-transformers==3.0.0
+groq==0.8.0
+pandas==2.2.2
+spacy==3.7.4
 
 # Audio & Translation
-SpeechRecognition
-pydub
-gTTS
+SpeechRecognition==3.10.4
+pydub==0.25.1
+gTTS==2.5.1
 googletrans==4.0.0-rc1
-deep-translator
+deep-translator==1.11.4

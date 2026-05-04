@@ -17,7 +17,7 @@ from deep_translator import GoogleTranslator
 app = Flask(__name__)
 CORS(app, origins=[
     "http://localhost:5173",
-    "https://carebridgeai-peach.vercel.app/"
+    "https://carebridgeai-peach.vercel.app"
 ])
 
 # 2. Load Secrets

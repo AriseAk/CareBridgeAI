@@ -1,92 +1,228 @@
-# CareBridgeAI - AI Medical Chatbot
+# CareBridgeAI - AI-Powered Humanitarian Platform
 
-Welcome to the repository for the **CareBridgeAI Medical Chatbot**. This is the core AI component of the broader CareBridgeAI platform, a comprehensive system designed to provide immediate help, support, and vital information to those in need.
+**CareBridgeAI** is a full-stack humanitarian platform connecting refugees, donors, and NGOs using AI. It features a medical chatbot powered by RAG (Retrieval-Augmented Generation), real-time hospital locator, voice search, and multilingual support.
 
-This chatbot is specifically fine-tuned on medical dialogues to understand patient descriptions and provide relevant, conversational responses, simulating a doctor's initial consultation.
-
----
-
-### DataSet link-https://huggingface.co/datasets/ruslanmv/ai-medical-chatbot
-
-## 🌍 Platform Vision
-
-CareBridgeAI aims to be an all-in-one support ecosystem. While this repository focuses on the AI chatbot, the platform's planned features include:
-
-- **AI Chatbot & Language Translator**: An intelligent assistant with voice and text capabilities to break down communication barriers.  
-- **Emergency Services**: Immediate ambulance calling and recommendations for the nearest medical facilities based on the user's illness.  
-- **Resource Locator**: A powerful search tool with budget filters to find the nearest NGOs, help centers, and refugee centers.  
-- **Community & Support**:  
-  - A registration interface for volunteers.  
-  - A messaging system to connect users with help centers for pickup and support.  
-  - A voluntary funding platform with filters for transparent donations.  
-- **Environmental Awareness**: Suggestions for improving local cleanliness, garbage disposal, and managing street dogs.  
-- **Reporting**: A feature to generate a summary of user interactions and reports.  
+🌐 **Live Demo**: [https://carebridgeai-peach.vercel.app](https://carebridgeai-peach.vercel.app)
 
 ---
 
-## 🤖 Model Details
+## 🏗️ Architecture
 
-The chatbot is a fine-tuned version of the **facebook/bart-base** model, a powerful sequence-to-sequence transformer. It has been trained on the AI Medical Chatbot dataset to specialize in understanding medical contexts.
-
-- **Base Model**: facebook/bart-base  
-- **Dataset**: ruslanmv/ai-medical-chatbot  
-- **Task**: Conditional Generation (Text-to-Text)  
-- **Input**: A combination of the illness description and the patient's dialogue.  
-- **Output**: A conversational response mimicking a doctor's advice or questions.  
-
----
-
-## ⚙️ Setting Up and Training the Model
-
-Follow these steps to set up the environment, train the model, and create your own fine-tuned version.
-
-### Step 1: Prerequisites
-Ensure you have Python 3.8 or newer installed on your machine.
-
-### Step 2: Clone the Repository (if applicable)
-```bash
-git clone https://github.com/AriseAk/CareBridgeAI.git
+```
+Frontend  →  Vercel               (React + Vite + TailwindCSS)
+Backend   →  HuggingFace Spaces   (Flask + Gunicorn)
+Vector DB →  Pinecone             (Medical case embeddings)
+LLM       →  Groq                 (LLaMA 3.3 70B)
 ```
 
-### Step 3: Install Dependencies
-The required Python libraries are listed in the `requirements.txt` file. Install them using pip.
+---
 
+## 🌍 Platform Features
+
+### 🤖 AI Medical Chatbot (RAG-Powered)
+- Describe your symptoms in **any language** and get relevant medical advice
+- Uses **Retrieval-Augmented Generation (RAG)**:
+  - `all-MiniLM-L6-v2` SentenceTransformer converts your query to a vector
+  - **Pinecone** searches 250,000+ medical dialogue embeddings for similar cases
+  - **Groq LLaMA 3.3 70B** generates a professional, empathetic response grounded in real doctor-patient cases
+- Trained on the [ruslanmv/ai-medical-chatbot](https://huggingface.co/datasets/ruslanmv/ai-medical-chatbot) dataset
+- Automatically detects the **specialist type** needed (General, Dentist, Cardiology, etc.)
+- Always ends with a disclaimer to consult a real doctor
+
+### 🗺️ Smart Hospital Locator
+- Automatically recommends nearby hospitals based on your symptoms
+- Uses **OpenStreetMap Overpass API** to find real medical facilities
+- Supports specialist search: General, Dentist, Pharmacy, Cardiology, Orthopedics, Neurology, Ophthalmology, Dermatology, Pediatrics
+- Falls back to a wider radius if no results found nearby
+- Shows facilities on an interactive **Leaflet map** with Google Maps directions
+
+### 🎤 Voice Search
+- Speak your symptoms instead of typing
+- Real-time **speech-to-text** using Google Speech Recognition
+- Supports multiple languages with auto-detection
+
+### 🔊 Text-to-Speech
+- Listen to AI responses read aloud
+- Multilingual TTS using **gTTS**
+- Hover over any bot message and click the speaker icon to hear it
+
+### 🌐 Multilingual Support
+- Input in any language — auto-translated to English for processing
+- Responses delivered back in the detected language
+- Powered by **deep-translator**
+
+### 💝 Donor Platform
+- Secure one-time and monthly donation options
+- Real-time impact tracking with progress bars
+- Active causes: Emergency Relief, Education, Healthcare, Housing
+
+### 🏢 NGO Hub
+- NGO registration and partnership portal
+- Resource management and donor connection tools
+- AI-powered analytics dashboard
+- Verified NGO network across 34 countries
+
+### 💡 Dark/Light Mode
+- Full dark and light theme support across all pages
+- Smooth animated transitions
+
+---
+
+## 🛠️ Tech Stack
+
+### Frontend
+| Technology | Purpose |
+|---|---|
+| React 19 | UI Framework |
+| Vite | Build Tool |
+| TailwindCSS 4 | Styling |
+| React Router DOM | Navigation |
+| React Leaflet | Interactive Maps |
+| Lucide React | Icons |
+| GSAP | Navbar Animations |
+
+### Backend
+| Technology | Purpose |
+|---|---|
+| Flask | Web Framework |
+| Gunicorn | WSGI Server |
+| SentenceTransformers | Query Embedding |
+| Pinecone | Vector Database |
+| Groq (LLaMA 3.3 70B) | LLM Response Generation |
+| gTTS | Text-to-Speech |
+| SpeechRecognition | Voice-to-Text |
+| deep-translator | Multilingual Translation |
+| Pydub + ffmpeg | Audio Processing |
+
+---
+
+## 📁 Project Structure
+
+```
+carebridgeai/
+├── src/
+│   ├── components/
+│   │   ├── ChatBot.jsx        # AI chatbot + map UI
+│   │   ├── Navbar.jsx         # Animated navbar
+│   │   ├── Main.jsx           # Landing page
+│   │   ├── Donor.jsx          # Donor platform
+│   │   ├── Ngo.jsx            # NGO hub
+│   │   ├── About.jsx          # About page
+│   │   ├── Services.jsx       # Services page
+│   │   ├── HospitalLocator.jsx# Hospital finder
+│   │   └── useLocation.jsx    # Geolocation hook
+│   ├── App.jsx
+│   └── main.jsx
+├── chat.py                    # Flask backend (RAG + APIs)
+├── main.ipynb                 # Pinecone data upload notebook
+├── Dockerfile                 # HuggingFace Spaces deployment
+├── requirements.txt
+└── README.md
+```
+
+---
+
+## 🚀 Running Locally
+
+### Prerequisites
+- Python 3.11+
+- Node.js 18+
+- Pinecone account
+- Groq API key
+
+### Step 1 — Clone the Repository
+```bash
+git clone https://github.com/AriseAk/CareBridgeAI.git
+cd CareBridgeAI
+```
+
+### Step 2 — Setup Backend
 ```bash
 pip install -r requirements.txt
 ```
 
-If you don't have a `requirements.txt` file, create one with the following content:
-
+Create a `.env` file in the root:
 ```
-pandas
-torch
-scikit-learn
-transformers
-datasets
-accelerate
+PINECONE_API_KEY=your_pinecone_key
+GROQ_API_KEY=your_groq_key
 ```
 
-### Step 4: Run the Training Script
-Save your Python code into a file named `train_chatbot.py`.
-
-Run the script from your terminal:
-
+Run the backend:
 ```bash
-python app.py
+python chat.py
 ```
 
-The script will run the backend for the website and the model named `./my-finetuned-medical-chatbot-pytorch` can be found from the model drive link.
+### Step 3 — Setup Frontend
+```bash
+npm install
+```
 
----
+Create a `.env` file:
+```
+VITE_API_URL=http://localhost:5000
+```
 
-Simultaneously run 
+Run the frontend:
 ```bash
 npm run dev
 ```
-This runs the frontend and when run together provides access to the ai model where u can access the chat bot.
 
+### Step 4 — Open in Browser
+```
+http://localhost:5173
+```
 
-### Google Collab link - [https://colab.research.google.com/drive/1XD-kanrUy_kxT8efIEYsnkBEBNCFjvsH#scrollTo=UR_cAqXy9Gt5]
 ---
 
- ### Model link - https://drive.google.com/file/d/1Ut6hJh_EBfB_reEh2cZPxai834ng10_W/view?usp=sharing
+## ☁️ Deployment
+
+### Frontend — Vercel
+1. Connect your GitHub repo to [vercel.com](https://vercel.com)
+2. Add environment variable:
+```
+VITE_API_URL = https://redinferno1736-carebridgeai-backend.hf.space
+```
+3. Deploy
+
+### Backend — HuggingFace Spaces
+1. Create a new Space at [huggingface.co/spaces](https://huggingface.co/spaces)
+2. Select **Docker** → **Blank** → **CPU Basic**
+3. Upload `chat.py`, `requirements.txt`, `Dockerfile`
+4. Add secrets in Space Settings:
+```
+PINECONE_API_KEY = your_key
+GROQ_API_KEY = your_key
+```
+5. Space URL: `https://your-username-carebridgeai-backend.hf.space`
+
+---
+
+## 🗄️ Dataset & Embeddings
+
+The RAG system is powered by the [ruslanmv/ai-medical-chatbot](https://huggingface.co/datasets/ruslanmv/ai-medical-chatbot) dataset.
+
+- Medical dialogues were cleaned, embedded using `all-MiniLM-L6-v2`
+- Uploaded to Pinecone index `medical-bot`
+- See `main.ipynb` for the full data pipeline
+
+### Google Colab Training Notebook
+[Open in Colab](https://colab.research.google.com/drive/1XD-kanrUy_kxT8efIEYsnkBEBNCFjvsH#scrollTo=UR_cAqXy9Gt5)
+
+### Fine-tuned BART Model (local use only)
+[Download from Google Drive](https://drive.google.com/file/d/1Ut6hJh_EBfB_reEh2cZPxai834ng10_W/view?usp=sharing)
+
+> Note: The production deployment uses the RAG pipeline (`chat.py`). The fine-tuned BART model (`app.py`) is available for local experimentation only.
+
+---
+
+## 👥 Team
+
+| Name |
+|---|
+| Prateek Raghavendra |
+| Akshay Bhat |
+| Pranav D P |
+
+---
+
+

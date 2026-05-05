@@ -35,6 +35,7 @@ index = pc.Index("medical-bot")
 
 print("🧠 Loading Embedding Model...")
 embedder = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
+embedder.max_seq_length = 256
 
 print("✨ Connecting to Groq...")
 client = Groq(api_key=GROQ_API_KEY)
